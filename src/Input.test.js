@@ -1,7 +1,8 @@
 import React from "react";
-import { shallow } from "enzyme";
+import { mount } from "enzyme";
 import { findByTestAttr } from "../test/testUtils";
 import Input from "./Input";
+import languageContext from "./contexts/languageContext";
 
 //Mock entire module for destructuring inside the component (instead of React.useState)
 // const mockSetCurrentGuess = jest.fn();
@@ -11,8 +12,16 @@ import Input from "./Input";
 //   useState: (initialState) => [initialState, mockSetCurrentGuess]
 // }))
 
-const setup = (success = false, secretWord = "party") => {
-  return shallow(<Input success={success} secretWord={secretWord} />);
+const setup = ({ language, secretWord, success }) => {
+  language = language || "en";
+  secretWord = secretWord || "party";
+  success = success || false;
+
+  return mount(
+    <languageContext.Provider value={language}>
+      <Input success={success} secretWord={secretWord} />
+    </languageContext.Provider>
+  );
 };
 
 describe("Tests for Guess Input", () => {
@@ -20,7 +29,7 @@ describe("Tests for Guess Input", () => {
     describe("Success is true", () => {
       let wrapper;
       beforeEach(() => {
-        wrapper = setup(true);
+        wrapper = setup({ success: true });
       });
       test("input renders without error", () => {
         const inputComponent = findByTestAttr(wrapper, "component-input");
@@ -38,7 +47,7 @@ describe("Tests for Guess Input", () => {
     describe("Success is false", () => {
       let wrapper;
       beforeEach(() => {
-        wrapper = setup(false);
+        wrapper = setup({ success: false });
       });
       test("input renders without error", () => {
         const inputComponent = findByTestAttr(wrapper, "component-input");
@@ -56,7 +65,7 @@ describe("Tests for Guess Input", () => {
   });
 
   test("Input renders without error", () => {
-    const wrapper = setup();
+    const wrapper = setup({});
     const inputComponent = findByTestAttr(wrapper, "component-input");
     expect(inputComponent.length).toBe(1);
   });
@@ -70,7 +79,7 @@ describe("Tests for Guess Input", () => {
       mockSetCurrentGuess.mockClear();
       originalUseState = React.useState;
       React.useState = jest.fn(() => ["", mockSetCurrentGuess]);
-      wrapper = setup();
+      wrapper = setup({});
     });
     afterEach(() => {
       React.useState = originalUseState;
@@ -86,6 +95,19 @@ describe("Tests for Guess Input", () => {
       const submitButton = findByTestAttr(wrapper, "submit-button");
       submitButton.simulate("click", { preventDefault() {} });
       expect(mockSetCurrentGuess).toHaveBeenCalledWith("");
+    });
+  });
+
+  describe("languagePicker", () => {
+    test("correctly renders submit string in english", () => {
+      const wrapper = setup({ language: "en" });
+      const submitButton = findByTestAttr(wrapper, "submit-button");
+      expect(submitButton.text()).toBe("Submit");
+    });
+    test("correctly renders submit string in emoji", () => {
+      const wrapper = setup({ language: "emoji" });
+      const submitButton = findByTestAttr(wrapper, "submit-button");
+      expect(submitButton.text()).toBe("🚀");
     });
   });
 });
